@@ -1,0 +1,147 @@
+Learning Objectives:-
+Create the `auth-svc` service
+Create the `data-svc` service
+
+
+Problem Statement:-
+Your company has just deployed two components of a web application to a Kubernetes cluster, using deployments with multiple replicas. They need a way to provide dynamic network access to these replicas so that there will be uninterrupted access to the components whenever replicas are created, removed, and replaced. One deployment is called auth-deployment, an authentication provider that needs to be accessible from outside the cluster. The other is called data-deployment, and it is a component designed to be accessed only by other pods within the cluster.
+
+The team wants you to create two services to expose these two components:-
+
+auth-deployment.yaml
+------------------------
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: auth-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+
+
+
+
+data-deployment.yaml
+-----------------------
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: data-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: data
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: data
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+
+
+Examine the two deployments, and create two services that meet the following criteria:
+
+auth-svc.yaml
+--------------
+
+The service name is auth-svc.
+The service exposes the pod replicas managed by the deployment named auth-deployment.
+The service listens on port 8080 and its targetPort matches the port exposed by the pods.
+The service type is NodePort.
+
+
+data-svc.yaml
+----------------
+The service name is data-svc.
+The service exposes the pod replicas managed by the deployment named data-deployment.
+The service listens on port 8080 and its targetPort matches the port exposed by the pods.
+The service type is ClusterIP.
+
+Note: All work should be done in the default namespace.
+
+
+
+
+
+solution:-
+
+create auth-svc.yaml file 
+
+edit with command - vi auth-svc.yaml
+
+
+
+kind: Service                          
+apiVersion: v1
+metadata:
+  name: auth-svc
+spec:
+  ports:
+    - port: 8080                               
+      targetPort: 80                    
+  selector:
+    name: auth-deployment                  
+  type: NodePort
+
+
+create service by the command - kubectl apply -f auth-svc.yaml
+
+
+create data-svc.yaml file
+edit with command - vi data-svc.yaml
+
+
+kind: Service                             
+apiVersion: v1
+metadata:
+  name: data-svc
+spec:
+  ports:
+    - port: 8080                               
+      targetPort: 80                     
+  selector:
+    name: data-deployment                  
+  type: ClusterIP
+
+
+Listing Services:-
+
+Command: kubectl get svc
+
+Listing Endpoints:-
+
+Command: kubectl get ep
+
+ 
+create service by the command - 
+
+kubectl apply -f data-svc.yaml

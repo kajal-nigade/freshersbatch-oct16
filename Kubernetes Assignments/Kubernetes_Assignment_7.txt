@@ -1,0 +1,112 @@
+Learning Objectives:-
+Create a PersistentVolume
+Create a PersistentVolumeClaim
+Create a MySQL Pod configured to use the PersistentVolumeClaim
+
+Problem Statement:-
+Your company needs a small database server to support a new application. They have asked you to deploy a pod running a MySQL container, but they want the data to persist even if the pod is deleted or replaced. Therefore, the MySQL database pod requires persistent storage.
+
+
+You will need to do the following:-
+
+1. Create a PersistentVolume:
+	The PersistentVolume should be named mysql-pv.
+	The volume needs a capacity of 1Gi.
+	Use a storageClassName of localdisk.
+	Use the accessMode ReadWriteOnce.
+	Store the data locally on the node using a hostPath volume at the location /mnt/data.
+
+2. Create a PersistentVolumeClaim:
+	The PersistentVolumeClaim should be named mysql-pv-claim.
+	Set a resource request on the claim for 500Mi of storage.
+	Use the same storageClassName and accessModes as the PersistentVolume so that this claim can bind to the PersistentVolume.
+
+3. Create a MySQL Pod configured to use the PersistentVolumeClaim:
+	The Pod should be named mysql-pod.
+	Use the image mysql:5.6.
+	Expose the containerPort 3306.
+	Set an environment variable called MYSQL_ROOT_PASSWORD with the value password.
+	Add the PersistentVolumeClaim as a volume and mount it to the container at the path /var/lib/mysql.
+
+
+
+
+
+
+Solution:-
+
+1) Creating file for Persistent Volume
+
+persistent-vol.yaml 
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv-volume
+  labels:
+    type: local
+spec:
+  storageClassName: localdisk
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"
+
+Running:
+Command: kubectl apply -f Persistent-vol.yaml
+Command: kubectl get pvc Persistent-vol
+
+
+2) Creating file for Persistent Volume Claim
+
+per-vol-claim.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+spec:
+  storageClassName: localdisk
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Gi
+
+Running:
+
+Command: kubectl apply -f per-vol-claim.yaml
+
+Command: kubectl get pvc per-vol-claim
+
+
+3) Create a MySQL Pod configured to use the PersistentVolumeClaim:
+
+pod-config.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql-pv-pod
+spec:
+  volumes:
+    - name: mysql-pv-storage
+      persistentVolumeClaim:
+        claimName: mysql-pv-claim
+  containers:
+    - name: task-pv-container
+      image: mysql:5.6
+      ports:
+        - containerPort: 3307
+          name: "http-server"
+      volumeMounts:
+        - mountPath: "/usr/share/nginx/html"
+          name: mysql-pv-storage
+      env:
+     - name: MYSQL_ROOT_PASSWORD
+       value: "password"
+    
+
+
+kubectl apply -f pod-config.yaml
+
+kubectl get pod pod-config

@@ -1,0 +1,83 @@
+Problem Statement:-
+
+Our pizza restaurant is working on a new web application designed to run in a Kubernetes cluster. The development team has designed a web service which serves a list of pizza toppings. The team has provided a set of specifications which the pizza topping web service needs in order to run.
+
+We have been asked to create a deployment that meets the app's specifications. Then, we need to expose the application using a NodePort service. This setup should meet the following criteria:
+
+1. All objects should be in the <your-name>-pizza namespace. This namespace already exists in the cluster.
+2. The deployment should be named pizza-deployment.
+3. The deployment should have 3 replicas.
+4. The deployment's pods should have one container using the linuxacademycontent/pizza-service image with the tag 1.14.6.
+5. Run the container with the command nginx.
+6. Run the container with the arguments "-g", "daemon off;".
+7. The pods should expose port 80 to the cluster.
+8. The pods should be configured to periodically check the /healthz endpoint on port 8081, and restart automatically if the request fails.
+9. The pods should not receive traffic from the service until the / endpoint on port 80 responds successfully.
+10. The service should be named pizza-service.
+11. The service should forward traffic to port 80 on the pods.
+12. The service should be exposed externally by listening on port 30080 on each node.
+
+
+
+
+
+sol:-
+
+Build the deployment and create it in the cluster
+Build a deployment descriptor called pizza-deployment.yml:
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+name: pizza-deployment
+namespace: pizza
+spec:
+replicas: 3
+selector:
+matchLabels:
+app: pizza
+template:
+metadata:
+labels:
+app: pizza
+spec:
+containers:
+- name: pizza
+image: linuxacademycontent/pizza-service:1.14.6
+command: ["nginx"]
+args: ["-g", "daemon off;"]
+ports:
+- containerPort: 80
+livenessProbe:
+httpGet:
+path: /healthz
+port: 8081
+readinessProbe:
+httpGet:
+path: /
+port: 80
+Create the deployment in the cluster:
+
+kubectl apply -f pizza-deployment.yml
+Build the service and create it in the cluster
+Build a service descriptor called pizza-service.yml:
+
+apiVersion: v1
+kind: Service
+metadata:
+name: pizza-service
+namespace: pizza
+spec:
+type: NodePort
+selector:
+app: pizza
+ports:
+- protocol: TCP
+port: 80
+nodePort: 30080
+Create the service in the cluster:
+
+kubectl apply -f pizza-service.yml
+You can verify the service is working by testing the nodePort with curl:
+
+curl localhost:30080
